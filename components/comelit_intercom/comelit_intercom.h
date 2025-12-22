@@ -128,7 +128,7 @@ template<typename... Ts> class ComelitIntercomSendAction : public Action<Ts...> 
   TEMPLATABLE_VALUE(uint16_t, command)
   TEMPLATABLE_VALUE(uint16_t, address)
 
-  void play(Ts... x) {
+  void play(const Ts &... x) override {
     ComelitIntercomData data{};
     data.command = this->command_.value(x...);
     data.address = this->address_.value(x...);
