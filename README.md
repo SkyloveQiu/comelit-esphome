@@ -48,7 +48,7 @@ If you are interested, please contact me at mansellrace@gmail.com
 ## [External component docs](components/README.md)
 
 ## First set-up
-Prerequisite: Home Assistant with the ESPHome integration.
+Prerequisite: Home Assistant.
 
 Boards supplied by me arrive already flashed. If you assembled your own, install the firmware from the [project page](https://mansellrace.github.io/comelit-esphome/) straight from your browser over USB.
 
@@ -64,7 +64,7 @@ Besides the binary sensor, every command received on the bus is also fired as a 
 
 ## Customising your device
 
-The stock firmware covers one intercom address and one door. If you need more than that (several binary sensors, extra buttons, expansion relays, a different sensitivity), you can **adopt** the device:
+The stock firmware covers one intercom address and two doors. If you need more than that (several binary sensors, extra buttons, expansion relays, a different sensitivity), you can **adopt** the device:
 
 - Install the "ESPHome Device Builder" add-on. It will show your device with an **ADOPT** button.
 - Adopting copies the whole stock configuration into your dashboard, so every entity is there in front of you, ready to be renamed, removed or added to.
@@ -90,4 +90,4 @@ An explanation of the commands that can be found on the bus can be found [here](
 - **2025, August**: Software release 2025.08. Home Assistant events now require `homeassistant_services: true` inside the `api` configuration.
 - **2026, August**: The address of a binary sensor can be a lambda, so it can be driven from a Home Assistant `number` entity and changed at runtime without recompiling anything.
 - **2026, August**: Two new entities report what travels on the bus: a `text_sensor` showing the last command as `C50_A10`, and an `event` entity tied to one address that fires with the command number.
-- **2026, August**: Boards now ship pre-flashed and keep themselves up to date. Each release is built and published automatically, a **Firmware** update entity shows the new version in Home Assistant, and the device can be adopted in the ESPHome Device Builder to get the whole configuration for editing. Blank boards can be flashed from the browser at the [project page](https://mansellrace.github.io/comelit-esphome/).
+- **2026, August**: Boards now ship pre-flashed and keep themselves up to date. Each release is built and published automatically, a **Firmware** update entity shows the new version in Home Assistant, and the device can be adopted in the ESPHome Device Builder to get the whole configuration for editing. Esphome compiler is no longer required for most installations, and the setup is quicker. Blank boards can be flashed from the browser at the [project page](https://mansellrace.github.io/comelit-esphome/).
