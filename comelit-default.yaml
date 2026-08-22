@@ -75,14 +75,15 @@ binary_sensor:
 text_sensor:
   - platform: comelit_intercom
     name: "Last command"
+    auto_clear: 0s
 
 # Fires on every command addressed to your intercom, with the command number as
 # the event type. Unlike the binary sensor it fires again when the very same
 # command is received twice in a row.
-event:
-  - platform: comelit_intercom
-    name: "Intercom event"
-    address: !lambda 'return (uint16_t) id(comelit_address).state;'
+# event:
+#   - platform: comelit_intercom
+#     name: "Intercom event"
+#     address: !lambda 'return (uint16_t) id(comelit_address).state;'
 
 # Command 16 opens the main door on most installations. Command 29 is the
 # secondary door or a generic actuator. Chained sends need a 200ms delay
