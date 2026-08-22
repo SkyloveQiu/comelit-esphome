@@ -34,14 +34,14 @@ struct ComelitIntercomData {
 class ComelitIntercomListener {
   public:
     void set_command(uint16_t command) { this->command_ = command; }
-    void set_address(uint16_t address) { this->address_ = address; }
+    template<typename V> void set_address(V address) { this->address_ = address; }
     void set_auto_off(uint16_t auto_off) { this->auto_off_ = auto_off; }
 
     virtual void turn_on(uint32_t *timer, uint16_t auto_off){};
     virtual void turn_off(uint32_t *timer){};
     uint32_t timer_;
   //private:
-    uint16_t address_;
+    TemplatableValue<uint16_t> address_;
     uint16_t command_;
     uint16_t auto_off_;
 };

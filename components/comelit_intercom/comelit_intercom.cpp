@@ -110,7 +110,7 @@ void ComelitComponent::setup() {
 }
 
 void ComelitComponent::dump_config() {
-  ESP_LOGCONFIG(TAG, "Comelit Intercom v. 2025-04-26:");
+  ESP_LOGCONFIG(TAG, "Comelit Intercom v. 2026-08-22:");
   LOG_PIN("  Pin RX: ", this->rx_pin_);
   LOG_PIN("  Pin TX: ", this->tx_pin_);
   if (this->tx2_enabled_) {
@@ -315,10 +315,13 @@ void ComelitComponent::comelit_decode(std::vector<uint16_t> src) {
           capi->fire_homeassistant_event(event_, {{"command", std::to_string(id(command))}, {"address", std::to_string(id(address))}});
         }
         for (auto &listener : listeners_) {
-          if (listener->command_ == command && listener->address_ == address) {
-            ESP_LOGD(TAG, "Binary sensor fired! %i %i", listener->command_, listener->address_);
-            listener->turn_on(&listener->timer_, listener->auto_off_);
-          }
+          if (listener->command_ != command)
+            continue;
+          const uint16_t listener_address = listener->address_.value();
+          if (listener_address != address)
+            continue;
+          ESP_LOGD(TAG, "Binary sensor fired! %i %i", listener->command_, listener_address);
+          listener->turn_on(&listener->timer_, listener->auto_off_);
         }
         if (logbook_language_ != LANGUAGE_DISABLED) {
           if (strcmp(logbook_entity_, "none") != 0) {

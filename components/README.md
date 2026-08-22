@@ -80,7 +80,7 @@ Configuration examples:
 	    name: Internal Door opened
 	    auto_off: 60s
 
-- **address** (**Required**, int): The address that when received sets the sensor to on .
+- **address** (**Required**, int, [templatable](https://esphome.io/automations/templates)): The address that when received sets the sensor to on. It is re-evaluated every time a command is received from the bus, so a lambda can be used to change the address at runtime without recompiling.
 - **command** (*Optional*, int): The command that when received sets the sensor to on . Defaults to  `50`.
 - **auto_off** (*Optional*,  [Time](https://esphome.io/guides/configuration-types#config-time)):  The time after which the sensor returns to off. If set to `0s` the sensor once it goes on, it stays there until it is turned off by an automation. Defaults to  `30s`.
 - **icon** (*Optional*, icon): Manually set the icon to use for the sensor in the frontend. Default to `mdi:doorbell`.
