@@ -1,0 +1,31 @@
+# Factory configuration: this is what gets pre-flashed onto the boards.
+#
+# It adds everything the shipped device needs but an adopted device does not:
+# the project identity, the dashboard import hook, and the OTA update channel.
+# Once a user adopts the device they manage their own builds, so the update
+# entity intentionally does not survive adoption.
+
+packages:
+  core: !include comelit-default.yaml
+
+esphome:
+  project:
+    name: mansellrace.comelit-intercom
+    # Do not edit: the release workflow replaces this exact string with the tag.
+    version: dev
+
+dashboard_import:
+  package_import_url: github://mansellrace/comelit-esphome/comelit-default.yaml@main
+
+# ESP8266 cannot verify certificates, so this must stay false.
+http_request:
+  verify_ssl: false
+
+ota:
+  - platform: http_request
+
+update:
+  - platform: http_request
+    name: Firmware
+    source: https://mansellrace.github.io/comelit-esphome/firmware/comelit-default.manifest.json
+    update_interval: 6h

@@ -63,49 +63,30 @@ If you are interested, please contact me at mansellrace@gmail.com
 ## [External component docs](components/README.md)
 
 ## First set-up
-Prerequisite: Home Assistant and "ESPHome Device Compiler" add-on installed
+Prerequisite: Home Assistant with the ESPHome integration.
+
+Boards supplied by me arrive already flashed. If you assembled your own, install the firmware from the [project page](https://mansellrace.github.io/comelit-esphome/) straight from your browser over USB.
+
 - Connect the pcb to the bus. A wifi network called comelit-default will appear. Connect and open the browser, a page will pop up that allows you to set up your wifi network. If it does not open go [here](http://192.168.4.1)
-- After configuring wifi go [here](http://comelit-default.local/). There you will find a log where you can view the commands received from the bus and you will find a button that launches command 16 with address 1, in most cases it will already be able to open the main gate.
-Try pressing a button on your intercom, on the log you will get what command and what address it generated. Make a note of the address, you will need it later.
-- Open your ESPHome Device Compiler page. Create a new device, press skip, select esp8266, press skip, press edit on the newly created device.
-Add the following lines to the configuration file at the bottom:
-
-      external_components:
-        - source: github://mansellrace/comelit-esphome
-  
-      comelit_intercom:
-- Add the line "homeassistant_services: true" inside the api configuration, like this
-
-      api:
-        homeassistant_services: true
-
-- There are two ways to receive commands, by event or by binary sensor.
-  - For the standard configuration, a home assistant event is generated for each command received. If you want to use events you don't have to add anything now. You can intercept this event directly on home assistant to trigger an automation.  [More information here](components/README.md#event)
-  - You can create a binary sensor that goes to "on" whenever a particular combination of command and address is received. The address is what you discovered in the previous step [More information here](components/README.md#binary-sensor)
-
-      Example of binary sensor config:
-
-        binary_sensor:
-          - platform: comelit_intercom
-            address: 10  <- Insert your address here
-
-- Transmission of commands can be via home assistant service or via button entity. [More information here](components/README.md#transmit-a-command)
-
-  Example of a button that opens the main door.
-
-      button:
-        - platform: template
-          name: Open Door
-          on_press:
-            - comelit_intercom.send:
-                command: 16
-                address: 1
-
-- Press “Install,” then “Manual Download.” A .bin file will be generated; the process may take a few minutes.
-- Go [here](http://comelit-default.local/) and upload the bin file as an ota update.
-- Home Assistant will find the new device you created automatically.
-If you need to change anything in the code, you can now install the new firmware directly from ESPHome Device Compiler by pressing install -> Wirelessly
+- Home Assistant will discover the device automatically. Add it from the ESPHome integration. You will get three entities: an **Intercom address** number, an **Incoming call** binary sensor and an **Open Door** button.
+- Find your address: go [here](http://comelit-default.local/), where you will find a log of the commands received from the bus. Press a button on your intercom and note the address it generated.
+- Set the **Intercom address** number to that address. The **Incoming call** sensor now fires whenever someone calls your intercom. The address is read at runtime, so there is nothing to recompile.
+- The **Open Door** button sends command 16, which in most cases already opens the main gate.
+- Firmware updates show up on their own as an update entity in Home Assistant. Press "Install" when one appears.
 - Have fun!
+
+Besides the binary sensor, every command received on the bus is also fired as a Home Assistant event, which you can use to trigger automations without adding any entity. [More information here](components/README.md#event)
+
+## Customising your device
+
+The stock firmware covers one intercom address and one door. If you need more than that (several binary sensors, extra buttons, expansion relays, a different sensitivity), you can **adopt** the device:
+
+- Install the "ESPHome Device Builder" add-on. It will show your device with an **ADOPT** button.
+- Adopting creates a short configuration file of your own that pulls in the stock one as a package, so you keep everything above and only add what you need.
+- Full list of options: [external component docs](components/README.md).
+
+> [!IMPORTANT]
+> Once you adopt the device, its configuration is yours and the automatic update entity goes away. From that point on you update it by recompiling from the ESPHome Device Builder.
 
 ## Commands description
 

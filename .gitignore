@@ -1,2 +1,6 @@
 
 immagini/Thumbs.db
+
+# ESPHome build artifacts (the buildable YAMLs live at the repo root)
+.esphome/
+secrets.yaml

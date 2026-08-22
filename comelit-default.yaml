@@ -1,0 +1,69 @@
+# Core configuration for the Comelit intercom board.
+#
+# This is the file that gets adopted into the user's ESPHome Device Builder.
+# Anything the device needs in normal operation belongs here; the factory-only
+# bits (project version, dashboard import, OTA update channel) live in
+# comelit-default.factory.yaml instead.
+
+esphome:
+  name: comelit-default
+  friendly_name: Comelit
+  comment: "Use this page to see the commands received from the bus"
+
+esp8266:
+  board: d1_mini
+
+logger:
+
+# Required by the comelit_intercom component: it fires events and writes
+# logbook entries through the Home Assistant API.
+api:
+  homeassistant_services: true
+
+ota:
+  - platform: esphome
+  - platform: web_server
+
+wifi:
+  ap:
+    ap_timeout: 10s
+  min_auth_mode: WPA2
+
+captive_portal:
+
+web_server:
+  version: 3
+
+external_components:
+  - source: github://mansellrace/comelit-esphome
+
+comelit_intercom:
+  hw_version: "2.6"
+
+# The address the intercom answers to is set by the user at runtime from Home
+# Assistant, so a single firmware works on every installation.
+number:
+  - platform: template
+    id: comelit_address
+    name: "Intercom address"
+    icon: mdi:numeric
+    optimistic: true
+    restore_value: true
+    initial_value: 1
+    min_value: 1
+    max_value: 255
+    step: 1
+    mode: box
+
+binary_sensor:
+  - platform: comelit_intercom
+    name: "Incoming call"
+    address: !lambda 'return (uint16_t) id(comelit_address).state;'
+
+button:
+  - platform: template
+    name: Open Door
+    on_press:
+      - comelit_intercom.send:
+          command: 16
+          address: 1
