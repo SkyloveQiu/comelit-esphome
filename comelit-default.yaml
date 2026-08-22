@@ -40,8 +40,12 @@ captive_portal:
 web_server:
   version: 3
 
+# refresh is explicit on purpose. Without it the github:// clone is cached for a
+# whole day, so a device adopted right after a push validates against the previous
+# state of the repo and fails on anything newly added.
 external_components:
   - source: github://mansellrace/comelit-esphome
+    refresh: 2min
 
 comelit_intercom:
   hw_version: "2.6"
