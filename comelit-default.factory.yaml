@@ -14,12 +14,22 @@ esphome:
     # Do not edit: the release workflow replaces this exact string with the tag.
     version: dev
 
+# import_full_config makes adoption materialise the whole configuration in the user's
+# dashboard instead of a thin wrapper around a package, so every entity is there to be
+# renamed or deleted. Requires a ref (@main) on the URL.
 dashboard_import:
   package_import_url: github://mansellrace/comelit-esphome/comelit-default.yaml@main
+  import_full_config: true
 
-# ESP8266 cannot verify certificates, so this must stay false.
+# ESP8266 cannot verify certificates, so verify_ssl must stay false.
+#
+# GitHub Pages does not support TLS max_fragment_length, so it sends full-size records:
+# 4145 bytes for the certificate and 16408 bytes for the firmware body. BearSSL must be
+# able to buffer a whole record, so the default 512 byte rx buffer cannot work here --
+# it fails the handshake with BR_ERR_TOO_LARGE and the update entity stays unknown.
 http_request:
   verify_ssl: false
+  tls_buffer_size_rx: 16384
 
 ota:
   - platform: http_request

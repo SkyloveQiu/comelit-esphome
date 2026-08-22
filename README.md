@@ -5,21 +5,6 @@ It works with simplebus 1, simplebus 1 color, simplebus 2.
 
 ![render](/images/render_fronte.png) ![render2](/images/render_retro.png)
 
-> [!IMPORTANT]
-> ### **Please note**:
->
-> for new features introduced in version 2025.08, you need to add the line "homeassistant_services: true"
->
-> inside the api configuration, like this
->
->      api:
->        homeassistant_services: true
-  
-
-**Big news:**  The hardware design has evolved, and has reached hw revision 2.6. The main changes are in the power supply section, now using a wide-range switching IC directly soldered to the pcb. Now compatible with simplebus 1 and simplebus 1 color. There is also a hardware revision dedicated to intercom kit systems with 2 wires for bus wires and 2 wires for power. More details in the [updates section](#updates)
-
-**Big big news**: Now the project is much easier to set up, the software is based on an external component
-
 **Side project:** *There is also a side-project that shares the same hardware: [comelit-esp8266](https://github.com/mansellrace/comelit-esp8266). it is a simplified and unrelated version of the home assistant world, created to allow decoding and interfacing the same protocol, with the same hardware, to interface the comelit bus even different home automation systems, to build intercom call repeaters, etc.*
 
 ## Introduction to the project
@@ -82,7 +67,7 @@ Besides the binary sensor, every command received on the bus is also fired as a 
 The stock firmware covers one intercom address and one door. If you need more than that (several binary sensors, extra buttons, expansion relays, a different sensitivity), you can **adopt** the device:
 
 - Install the "ESPHome Device Builder" add-on. It will show your device with an **ADOPT** button.
-- Adopting creates a short configuration file of your own that pulls in the stock one as a package, so you keep everything above and only add what you need.
+- Adopting copies the whole stock configuration into your dashboard, so every entity is there in front of you, ready to be renamed, removed or added to.
 - Full list of options: [external component docs](components/README.md).
 
 > [!IMPORTANT]
@@ -102,3 +87,6 @@ An explanation of the commands that can be found on the bus can be found [here](
 - **2024, February**: Release of the new software. Now the project is based on an external component of esphome and configuration is much easier.
 - **2024, August**: Hw version 2.6, added compatibility with simplebus 1 and simplebus 1 color. There is also a hardware revision dedicated to intercom kit systems with 2 wires for bus wires and 2 wires for power.
 - **2025, April**: Hw version 2.7 specific for Simplebus 1
+- **2025, August**: Software release 2025.08. Home Assistant events and logbook entries now require `homeassistant_services: true` inside the `api` configuration.
+- **2026, August**: The address of a binary sensor can be a lambda, so it can be driven from a Home Assistant `number` entity and changed at runtime without recompiling anything.
+- **2026, August**: Boards now ship pre-flashed and keep themselves up to date. Each release is built and published automatically, a **Firmware** update entity shows the new version in Home Assistant, and the device can be adopted in the ESPHome Device Builder to get the whole configuration for editing. Blank boards can be flashed from the browser at the [project page](https://mansellrace.github.io/comelit-esphome/).

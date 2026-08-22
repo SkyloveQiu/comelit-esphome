@@ -1,9 +1,12 @@
-# Core configuration for the Comelit intercom board.
+# Comelit intercom - Home Assistant interface
+# https://github.com/mansellrace/comelit-esphome
 #
-# This is the file that gets adopted into the user's ESPHome Device Builder.
-# Anything the device needs in normal operation belongs here; the factory-only
-# bits (project version, dashboard import, OTA update channel) live in
-# comelit-default.factory.yaml instead.
+# This is the configuration your device shipped with. Everything below is yours
+# to change: rename the entities, delete the ones you do not use, add as many
+# binary sensors and buttons as your installation needs.
+#
+# The options of the comelit_intercom component are documented here:
+# https://github.com/mansellrace/comelit-esphome/blob/main/components/README.md
 
 esphome:
   name: comelit-default
@@ -15,7 +18,7 @@ esp8266:
 
 logger:
 
-# Required by the comelit_intercom component: it fires events and writes
+# homeassistant_services is required: the component fires events and writes
 # logbook entries through the Home Assistant API.
 api:
   homeassistant_services: true
@@ -24,6 +27,9 @@ ota:
   - platform: esphome
   - platform: web_server
 
+# Wi-Fi credentials are the ones you entered in the captive portal when you
+# first set the device up, and they are kept in flash. If you prefer to have
+# them in this file, add ssid and password here.
 wifi:
   ap:
     ap_timeout: 10s
@@ -40,8 +46,10 @@ external_components:
 comelit_intercom:
   hw_version: "2.6"
 
-# The address the intercom answers to is set by the user at runtime from Home
-# Assistant, so a single firmware works on every installation.
+# The address your intercom answers to. You set it from Home Assistant, and the
+# binary sensor below picks it up straight away -- no recompiling needed.
+# If you would rather hard-code the address, delete this number and write the
+# plain value in the binary sensor instead.
 number:
   - platform: template
     id: comelit_address
@@ -55,11 +63,16 @@ number:
     step: 1
     mode: box
 
+# Turns on when someone calls your intercom (command 50 is the default).
+# Add more of these to react to other commands, for example a door being opened.
 binary_sensor:
   - platform: comelit_intercom
     name: "Incoming call"
     address: !lambda 'return (uint16_t) id(comelit_address).state;'
 
+# Command 16 opens the main door on most installations. Command 29 is the
+# secondary door or a generic actuator. Chained sends need a 200ms delay
+# between them.
 button:
   - platform: template
     name: Open Door
