@@ -9,6 +9,19 @@ packages:
   core: !include comelit-default.yaml
 
 esphome:
+  # The built-in first check gives up if the network is not up within 60s of boot,
+  # and then waits a full update_interval. Measured on real hardware, Wi-Fi came up
+  # 43s in -- too close to that limit for a device that ships to users. Check again
+  # once the network is actually there.
+  on_boot:
+    priority: -100
+    then:
+      - wait_until:
+          condition:
+            wifi.connected:
+      - delay: 5s
+      - update.check:
+          id: firmware_update
   project:
     name: mansellrace.comelit-intercom
     # Do not edit: the release workflow replaces this exact string with the tag.
@@ -36,6 +49,7 @@ ota:
 
 update:
   - platform: http_request
+    id: firmware_update
     name: Firmware
     source: https://mansellrace.github.io/comelit-esphome/firmware/comelit-default.manifest.json
     update_interval: 6h

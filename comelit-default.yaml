@@ -18,8 +18,8 @@ esp8266:
 
 logger:
 
-# homeassistant_services is required: the component fires events and writes
-# logbook entries through the Home Assistant API.
+# homeassistant_services is required: the component fires events through the
+# Home Assistant API.
 api:
   homeassistant_services: true
 
@@ -47,9 +47,9 @@ comelit_intercom:
   hw_version: "2.6"
 
 # The address your intercom answers to. You set it from Home Assistant, and the
-# binary sensor below picks it up straight away -- no recompiling needed.
+# entities below pick it up straight away -- no recompiling needed.
 # If you would rather hard-code the address, delete this number and write the
-# plain value in the binary sensor instead.
+# plain value in the entities instead.
 number:
   - platform: template
     id: comelit_address
@@ -70,6 +70,20 @@ binary_sensor:
     name: "Incoming call"
     address: !lambda 'return (uint16_t) id(comelit_address).state;'
 
+# What the device comment above points at: the last command seen on the bus,
+# written as C<command>_A<address>. It goes back to empty after 10 seconds.
+text_sensor:
+  - platform: comelit_intercom
+    name: "Last command"
+
+# Fires on every command addressed to your intercom, with the command number as
+# the event type. Unlike the binary sensor it fires again when the very same
+# command is received twice in a row.
+event:
+  - platform: comelit_intercom
+    name: "Intercom event"
+    address: !lambda 'return (uint16_t) id(comelit_address).state;'
+
 # Command 16 opens the main door on most installations. Command 29 is the
 # secondary door or a generic actuator. Chained sends need a 200ms delay
 # between them.
@@ -77,6 +91,17 @@ button:
   - platform: template
     name: Open Door
     on_press:
+      - comelit_intercom.send:
+          command: 16
+          address: 1
+
+  - platform: template
+    name: Open Secondary Door
+    on_press:
+      - comelit_intercom.send:
+          command: 19
+          address: 1
+      - delay: 200ms
       - comelit_intercom.send:
           command: 16
           address: 1
