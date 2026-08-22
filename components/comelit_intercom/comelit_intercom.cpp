@@ -259,10 +259,6 @@ void ComelitComponent::loop() {
 }
 
 void ComelitComponent::comelit_decode(std::vector<uint16_t> src) {
-  if (strcmp(event_, "esphome.none") != 0 || logbook_language_ != LANGUAGE_DISABLED) {
-
-  }
-  auto capi = new esphome::api::CustomAPIDevice();
   char message[18];
   int bits = 0;
   if (src.size() == 38) {
@@ -312,39 +308,19 @@ void ComelitComponent::comelit_decode(std::vector<uint16_t> src) {
         
         if (strcmp(event_, "esphome.none") != 0) {
           ESP_LOGD(TAG, "Send event to home assistant on %s", event_);
-          capi->fire_homeassistant_event(event_, {{"command", std::to_string(id(command))}, {"address", std::to_string(id(address))}});
+          esphome::api::CustomAPIDevice capi;
+          capi.fire_homeassistant_event(event_, {{"command", std::to_string(id(command))}, {"address", std::to_string(id(address))}});
         }
         for (auto &listener : listeners_) {
-          if (listener->command_ != command)
+          if (!listener->matches(this->command, this->address))
             continue;
-          const uint16_t listener_address = listener->address_.value();
-          if (listener_address != address)
-            continue;
-          ESP_LOGD(TAG, "Binary sensor fired! %i %i", listener->command_, listener_address);
+          ESP_LOGD(TAG, "Listener matched: command %i, address %i", this->command, this->address);
           listener->turn_on(&listener->timer_, listener->auto_off_);
-        }
-        if (logbook_language_ != LANGUAGE_DISABLED) {
-          if (strcmp(logbook_entity_, "none") != 0) {
-            capi->call_homeassistant_service("logbook.log", {
-              {"name", "Comelit"},
-              {"message", logbook_gen()},
-              {"entity_id", logbook_entity_},
-              });
-          } else {
-            capi->call_homeassistant_service("logbook.log", {
-              {"name", "Comelit"},
-              {"message", logbook_gen()},
-              });
-          }
+          listener->on_command(this->command, this->address);
         }
       }
     }
   }
-}
-
-
-std::string ComelitComponent::logbook_gen() {
-  return "ciao";
 }
 
 void IRAM_ATTR HOT ComelitComponentStore::gpio_intr(ComelitComponentStore *arg) {

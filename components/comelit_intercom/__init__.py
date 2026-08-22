@@ -19,8 +19,6 @@ CONF_HW_VERSION = "hw_version"
 CONF_RX_PIN = "rx_pin"
 CONF_TX_PIN = "tx_pin"
 CONF_TX2_PIN = "tx2_pin"
-CONF_LOGBOOK_LANGUAGE = "logbook_language"
-CONF_LOGBOOK_ENTITY = "logbook_entity"
 CONF_DUMP = "dump"
 CONF_EVENT = "event"
 CONF_COMMAND = "command"
@@ -42,13 +40,6 @@ SENSITIVITY_TYPES = {
     "2.7" : ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
 }
 
-LanguageType = comelit_intercom_ns.enum("Language")
-LANGUAGE_TYPES = {
-    "disabled": LanguageType.LANGUAGE_DISABLED,
-    "plain_command": LanguageType.LANGUAGE_PLAIN_COMMAND,
-    "italian": LanguageType.LANGUAGE_ITALIAN,
-    "english": LanguageType.LANGUAGE_ENGLISH,
-}
 def validate_config(config):
     hw_version = config[CONF_HW_VERSION]
     if config[CONF_SENSITIVITY] != "default":
@@ -71,8 +62,6 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_RX_PIN, default=12): pins.internal_gpio_input_pin_schema,
             cv.Optional(CONF_TX_PIN, default=5): pins.internal_gpio_output_pin_schema,
             cv.Optional(CONF_TX2_PIN): pins.internal_gpio_output_pin_schema,
-            cv.Optional(CONF_LOGBOOK_LANGUAGE, default="disabled"): cv.enum(LANGUAGE_TYPES),
-            cv.Optional(CONF_LOGBOOK_ENTITY, default="none"): cv.string,
             cv.Optional(CONF_FILTER, default="1000us"): cv.All(
                 cv.positive_time_period_microseconds,
                 cv.Range(max=TimePeriod(microseconds=2500)),
@@ -107,8 +96,6 @@ async def to_code(config):
         cg.add(var.set_tx2_pin(pin))
         cg.add(var.set_tx2_enabled(True))
 
-    cg.add(var.set_logbook_language(config[CONF_LOGBOOK_LANGUAGE]))
-    cg.add(var.set_logbook_entity(config[CONF_LOGBOOK_ENTITY]))
     cg.add(var.set_sensitivity(config[CONF_SENSITIVITY]))
     cg.add(var.set_filter_us(config[CONF_FILTER]))
     cg.add(var.set_idle_us(config[CONF_IDLE]))

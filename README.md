@@ -87,6 +87,7 @@ An explanation of the commands that can be found on the bus can be found [here](
 - **2024, February**: Release of the new software. Now the project is based on an external component of esphome and configuration is much easier.
 - **2024, August**: Hw version 2.6, added compatibility with simplebus 1 and simplebus 1 color. There is also a hardware revision dedicated to intercom kit systems with 2 wires for bus wires and 2 wires for power.
 - **2025, April**: Hw version 2.7 specific for Simplebus 1
-- **2025, August**: Software release 2025.08. Home Assistant events and logbook entries now require `homeassistant_services: true` inside the `api` configuration.
+- **2025, August**: Software release 2025.08. Home Assistant events now require `homeassistant_services: true` inside the `api` configuration.
 - **2026, August**: The address of a binary sensor can be a lambda, so it can be driven from a Home Assistant `number` entity and changed at runtime without recompiling anything.
+- **2026, August**: Two new entities report what travels on the bus: a `text_sensor` showing the last command as `C50_A10`, and an `event` entity tied to one address that fires with the command number.
 - **2026, August**: Boards now ship pre-flashed and keep themselves up to date. Each release is built and published automatically, a **Firmware** update entity shows the new version in Home Assistant, and the device can be adopted in the ESPHome Device Builder to get the whole configuration for editing. Blank boards can be flashed from the browser at the [project page](https://mansellrace.github.io/comelit-esphome/).

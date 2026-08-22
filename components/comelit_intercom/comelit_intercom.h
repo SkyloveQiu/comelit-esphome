@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <utility>
 #include <vector>
 #include "esphome/core/component.h"
@@ -19,13 +20,6 @@ enum HardwareType {
     HW_VERSION_TYPE_OLDER,
 };
 
-enum LanguageType {
-    LANGUAGE_DISABLED,
-    LANGUAGE_PLAIN_COMMAND,
-    LANGUAGE_ITALIAN,
-    LANGUAGE_ENGLISH,
-};
-
 struct ComelitIntercomData {
   uint16_t command;
   uint16_t address;
@@ -37,13 +31,36 @@ class ComelitIntercomListener {
     template<typename V> void set_address(V address) { this->address_ = address; }
     void set_auto_off(uint16_t auto_off) { this->auto_off_ = auto_off; }
 
+    /// Return true when a frame concerns this listener. The default matches one exact
+    /// command/address pair; the command is checked first so that a templated address is
+    /// only evaluated when it can matter.
+    virtual bool matches(uint16_t command, uint16_t address) {
+      return this->command_ == command && this->address_.value() == address;
+    }
+
     virtual void turn_on(uint32_t *timer, uint16_t auto_off){};
     virtual void turn_off(uint32_t *timer){};
-    uint32_t timer_;
+    /// Called for every matching frame, with the values that were actually received.
+    virtual void on_command(uint16_t command, uint16_t address){};
+    // A listener that does not use these (an event entity has nothing to turn off)
+    // must still not leave loop() reading indeterminate values.
+    uint32_t timer_{0};
   //private:
     TemplatableValue<uint16_t> address_;
-    uint16_t command_;
-    uint16_t auto_off_;
+    uint16_t command_{0};
+    uint16_t auto_off_{0};
+};
+
+/// Listener driven by a list of commands; an empty list accepts every command.
+class ComelitIntercomFilteredListener : public ComelitIntercomListener {
+ public:
+  void set_commands(std::vector<uint8_t> commands) { this->commands_ = std::move(commands); }
+
+ protected:
+  static bool accepts(const std::vector<uint8_t> &list, uint16_t value) {
+    return list.empty() || std::find(list.begin(), list.end(), value) != list.end();
+  }
+  std::vector<uint8_t> commands_;
 };
 
 struct ComelitComponentStore {
@@ -67,7 +84,6 @@ class ComelitComponent : public Component {
  public:
   void comelit_decode(std::vector<uint16_t> src);
   void dump(std::vector<uint16_t>) const;
-  std::string logbook_gen();
   void sending_loop_simplebus_2();
   void sending_loop_simplebus_1();
 
@@ -76,8 +92,6 @@ class ComelitComponent : public Component {
   void set_tx2_pin(InternalGPIOPin *pin) { tx2_pin_ = pin; }
   void set_tx2_enabled(bool enabled) { this->tx2_enabled_ = enabled; }
   void set_hw_version(HardwareType hw_version) { hw_version_ = hw_version; }
-  void set_logbook_language(LanguageType logbook_language) { logbook_language_ = logbook_language; }
-  void set_logbook_entity(const char *logbook_entity) { logbook_entity_ = logbook_entity; }
   void set_sensitivity(const char *sensitivity) { sensitivity_ = sensitivity; }
   void set_buffer_size(uint32_t buffer_size) { this->buffer_size_ = buffer_size; }
   void set_filter_us(uint16_t filter_us) { this->filter_us_ = filter_us; }
@@ -104,8 +118,6 @@ class ComelitComponent : public Component {
   InternalGPIOPin *tx2_pin_;
   bool tx2_enabled_ = false; 
   HardwareType hw_version_;
-  LanguageType logbook_language_;
-  const char* logbook_entity_;
   const char* sensitivity_;
   const char* event_;
   bool dump_raw_;
