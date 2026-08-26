@@ -1,6 +1,14 @@
 # comelit-esphome
 Comelit Simplebus Interface for Home Assistant
 
+## Native Apple HomeKit without Home Assistant
+
+If you do not use Home Assistant, the repository now includes a standalone
+Arduino/PlatformIO firmware in [`native_homekit`](native_homekit/README.md).
+It runs directly on the supplied ESP8266/Wemos D1 mini board and exposes an
+Incoming Call doorbell event plus a momentary switch for the main door command.
+The original ESPHome firmware and component remain unchanged.
+
 It works with simplebus 1, simplebus 1 color, simplebus 2.
 
 ![render](/images/render_fronte.png) ![render2](/images/render_retro.png)

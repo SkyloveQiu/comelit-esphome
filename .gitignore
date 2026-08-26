@@ -4,3 +4,8 @@ immagini/Thumbs.db
 # ESPHome build artifacts (the buildable YAMLs live at the repo root)
 .esphome/
 secrets.yaml
+.pio/
+native_homekit/.pio/
+
+# Local native HomeKit configuration may contain Wi-Fi and pairing secrets.
+native_homekit/include/config.h
