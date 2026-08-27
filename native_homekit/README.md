@@ -12,6 +12,7 @@ The accessory exposes:
 
 - **Incoming Call** as a HomeKit doorbell event;
 - **Open Main Door** as a momentary HomeKit switch that sends command 16;
+- a token-protected HTTP webhook for **Open Main Door**;
 
 Audio and video are not available: the Comelit board only decodes and sends
 Simplebus commands.
@@ -62,6 +63,46 @@ more reliable at 160 MHz, which is already selected in `platformio.ini`.
 If the accessory was paired before and no longer pairs after changing the
 accessory definition, set `COMELIT_RESET_HOMEKIT` to `1`, flash once, then set
 it back to `0` and flash again.
+
+## Webhook for Apple Shortcuts
+
+HomeKit remains enabled. The firmware also starts an HTTP server on the
+configured port (default `80`) with these endpoints:
+
+```text
+POST /api/door/open
+GET  /api/health
+```
+
+Both endpoints require either of these headers:
+
+```text
+Authorization: Bearer YOUR_WEBHOOK_TOKEN
+```
+
+or:
+
+```text
+X-Webhook-Token: YOUR_WEBHOOK_TOKEN
+```
+
+The open endpoint returns `202` when the Comelit command has been accepted,
+`401` for a wrong token, `409` while the bus is busy, and `429` when another
+accepted request arrives within the three-second safety window. In Apple
+Shortcuts, use **Get Contents of URL**, set the method to `POST`, leave the
+request body empty, and add the `Authorization` header.
+
+The token is compiled into the ignored local `include/config.h`; it is never
+written to Git. Change it and flash again to rotate it. A placeholder token
+disables the endpoint rather than leaving an unauthenticated webhook.
+
+Important security note: the ESP8266 server is plain HTTP. Do not forward port
+80 directly to the Internet unless you accept that the token can be captured
+by anyone able to observe the connection. For public access, put an HTTPS
+reverse proxy in front of the ESP (for example Azure Functions, an Azure
+Application Gateway, or a VPN) and forward only the protected internal
+request. At minimum, use a non-default external port, disable UPnP, and add a
+firewall allow-list where possible.
 
 ## Tested personal configuration
 

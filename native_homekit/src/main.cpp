@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
 #include <arduino_homekit_server.h>
 
 #include "config.h"
@@ -478,6 +479,116 @@ volatile bool ComelitBus::overflow_ = false;
 
 ComelitBus bus;
 
+#if COMELIT_WEBHOOK_ENABLED
+ESP8266WebServer webhookServer(COMELIT_WEBHOOK_PORT);
+
+bool webhookServerStarted = false;
+bool webhookAcceptedAtSet = false;
+uint32_t webhookAcceptedAt = 0;
+
+bool constantTimeTokenEquals(const String &candidate) {
+    const size_t expectedLength = strlen(COMELIT_WEBHOOK_TOKEN);
+    if (candidate.length() != expectedLength) {
+        return false;
+    }
+
+    uint8_t difference = 0;
+    for (size_t index = 0; index < expectedLength; ++index) {
+        difference |= static_cast<uint8_t>(candidate[index]) ^
+                      static_cast<uint8_t>(COMELIT_WEBHOOK_TOKEN[index]);
+    }
+    return difference == 0;
+}
+
+bool webhookTokenConfigured() {
+    return strlen(COMELIT_WEBHOOK_TOKEN) >= 32 &&
+           strcmp(COMELIT_WEBHOOK_TOKEN, "CHANGE_ME_TO_A_RANDOM_SECRET") != 0;
+}
+
+bool webhookAuthorized() {
+    String candidate;
+    if (webhookServer.hasHeader("Authorization")) {
+        const String authorization = webhookServer.header("Authorization");
+        const String bearerPrefix = "Bearer ";
+        if (!authorization.startsWith(bearerPrefix)) {
+            return false;
+        }
+        candidate = authorization.substring(bearerPrefix.length());
+    } else if (webhookServer.hasHeader("X-Webhook-Token")) {
+        candidate = webhookServer.header("X-Webhook-Token");
+    } else {
+        return false;
+    }
+    return webhookTokenConfigured() && constantTimeTokenEquals(candidate);
+}
+
+void sendWebhookJson(int statusCode, const String &body) {
+    webhookServer.sendHeader("Cache-Control", "no-store");
+    webhookServer.send(statusCode, "application/json", body);
+}
+
+bool webhookRateLimited() {
+    return webhookAcceptedAtSet &&
+           !timeReached(millis(),
+                        webhookAcceptedAt + COMELIT_WEBHOOK_MIN_INTERVAL_MS);
+}
+
+void handleWebhookOpen() {
+    if (!webhookAuthorized()) {
+        webhookServer.sendHeader("WWW-Authenticate", "Bearer");
+        sendWebhookJson(401, "{\"ok\":false,\"error\":\"unauthorized\"}");
+        return;
+    }
+
+    if (webhookRateLimited()) {
+        webhookServer.sendHeader(
+            "Retry-After",
+            String((COMELIT_WEBHOOK_MIN_INTERVAL_MS + 999) / 1000));
+        sendWebhookJson(429, "{\"ok\":false,\"error\":\"too_many_requests\"}");
+        return;
+    }
+
+    if (!bus.sendMainDoor()) {
+        sendWebhookJson(409, "{\"ok\":false,\"error\":\"device_busy\"}");
+        return;
+    }
+
+    webhookAcceptedAt = millis();
+    webhookAcceptedAtSet = true;
+    Serial.println("Webhook: main door request accepted");
+    sendWebhookJson(202, "{\"ok\":true,\"command\":\"open_main_door\"}");
+}
+
+void handleWebhookHealth() {
+    if (!webhookAuthorized()) {
+        webhookServer.sendHeader("WWW-Authenticate", "Bearer");
+        sendWebhookJson(401, "{\"ok\":false,\"error\":\"unauthorized\"}");
+        return;
+    }
+
+    String body = String(F("{\"ok\":true,\"wifi\":true,\"ip\":\"")) +
+                  WiFi.localIP().toString() +
+                  String(F("\",\"rssi\":")) + String(WiFi.RSSI()) + "}";
+    sendWebhookJson(200, body);
+}
+
+void setupWebhook() {
+    if (!webhookTokenConfigured()) {
+        Serial.println("Webhook disabled: configure a random token of at least 32 characters");
+        return;
+    }
+
+    static const char *headerKeys[] = {"Authorization", "X-Webhook-Token"};
+    webhookServer.collectHeaders(headerKeys, 2);
+    webhookServer.on("/api/door/open", HTTP_POST, handleWebhookOpen);
+    webhookServer.on("/api/health", HTTP_GET, handleWebhookHealth);
+    webhookServer.begin();
+    webhookServerStarted = true;
+    Serial.printf("Webhook ready: POST http://%s:%u/api/door/open\n",
+                  WiFi.localIP().toString().c_str(), COMELIT_WEBHOOK_PORT);
+}
+#endif
+
 homekit_value_t doorbellEventGetter() {
     return HOMEKIT_NULL_CPP();
 }
@@ -561,11 +672,19 @@ void setup() {
     connectWifi();
     bus.begin(onComelitFrame);
     setupHomeKit();
+#if COMELIT_WEBHOOK_ENABLED
+    setupWebhook();
+#endif
 }
 
 void loop() {
     bus.loop();
     serviceMainDoorSwitch();
     arduino_homekit_loop();
+#if COMELIT_WEBHOOK_ENABLED
+    if (webhookServerStarted) {
+        webhookServer.handleClient();
+    }
+#endif
     delay(1);
 }

@@ -6,6 +6,13 @@
 #define COMELIT_WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 #define COMELIT_HOMEKIT_CODE "111-11-111"
 
+// The webhook uses Authorization: Bearer <token>. Use a random value with at
+// least 32 characters. The placeholder deliberately disables the endpoint.
+#define COMELIT_WEBHOOK_ENABLED 1
+#define COMELIT_WEBHOOK_PORT 80
+#define COMELIT_WEBHOOK_TOKEN "CHANGE_ME_TO_A_RANDOM_SECRET"
+#define COMELIT_WEBHOOK_MIN_INTERVAL_MS 3000
+
 #define COMELIT_DEVICE_NAME "Comelit Intercom"
 #define COMELIT_SERIAL_NUMBER "COMELIT-001"
 
