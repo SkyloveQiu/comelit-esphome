@@ -41,8 +41,8 @@
 #define COMELIT_MAIN_DOOR_COMMAND 16
 
 // Additional main-door frames sent when a bus pulse is missed.
-#define COMELIT_MAIN_DOOR_RETRIES 2
-#define COMELIT_MAIN_DOOR_RETRY_DELAY_MS 120
+#define COMELIT_MAIN_DOOR_RETRIES 5
+#define COMELIT_MAIN_DOOR_RETRY_DELAY_MS 250
 
 // Set to 1 only to remove HomeKit pairing data on the next boot; then set it
 // back to 0 and flash again.

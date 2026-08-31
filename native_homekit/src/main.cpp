@@ -115,15 +115,6 @@ public:
             }
         }
 
-        if (sending_) {
-#if COMELIT_SIMPLEBUS1
-            sendingLoopSimplebus1();
-#else
-            sendingLoopSimplebus2();
-#endif
-            return;
-        }
-
         receiveLoop();
     }
 
@@ -146,11 +137,7 @@ private:
 
     FrameHandler handler_{nullptr};
     bool sending_{false};
-    bool preamble_{false};
     bool sendBuffer_[19]{};
-    uint8_t sendIndex_{0};
-    uint32_t sendNextBit_{0};
-    uint32_t sendNextChange_{0};
     bool mainRetryPending_{false};
     uint8_t mainRetriesRemaining_{0};
     uint32_t mainRetryDueAt_{0};
@@ -230,21 +217,23 @@ private:
         capacitorReleaseAt_ = millis() + 3000;
 #endif
 
-        sendIndex_ = 0;
-        sendNextBit_ = 0;
-        sendNextChange_ = 0;
-        preamble_ = true;
         sending_ = true;
         Serial.printf("Comelit: sending command %u, address %u\n", command, address);
+
+        // The Comelit protocol is sensitive to gaps between bits. Send the
+        // complete frame synchronously so HomeKit, the webhook server, or the
+        // outer Arduino loop cannot stretch a 3/6 ms inter-bit pause.
+#if COMELIT_SIMPLEBUS1
+        sendFrameSimplebus1();
+#else
+        sendFrameSimplebus2();
+#endif
+        finishSending();
         return true;
     }
 
     void finishSending() {
         sending_ = false;
-        preamble_ = false;
-        sendNextBit_ = 0;
-        sendNextChange_ = 0;
-        sendIndex_ = 0;
         writeTx(false);
         attachInterrupt(digitalPinToInterrupt(COMELIT_RX_PIN), rxInterrupt, CHANGE);
         if (mainRetryPending_ && mainRetriesRemaining_ > 0) {
@@ -252,97 +241,42 @@ private:
         }
     }
 
-    void sendingLoopSimplebus2() {
-        uint32_t now = micros();
-        if (preamble_) {
-            if (sendNextBit_ == 0 && sendNextChange_ == 0) {
-                writeTx(true);
-                sendNextBit_ = now + 3000;
-                sendNextChange_ = now + 20;
-                while (!timeReached(micros(), sendNextBit_)) {
-                    if (timeReached(micros(), sendNextChange_)) {
-                        toggleTx();
-                        sendNextChange_ += 20;
-                    }
-                }
-                sendNextBit_ = 0;
-                sendNextChange_ += 16000;
-                writeTx(false);
-                return;
+    void sendCarrierSimplebus2(uint32_t durationUs) {
+        const uint32_t startedAt = micros();
+        const uint32_t endAt = startedAt + durationUs;
+        uint32_t nextToggleAt = startedAt + 20;
+        writeTx(true);
+        while (!timeReached(micros(), endAt)) {
+            const uint32_t now = micros();
+            if (timeReached(now, nextToggleAt)) {
+                toggleTx();
+                nextToggleAt += 20;
             }
-            if (!timeReached(now, sendNextChange_)) {
-                return;
-            }
-            sendNextBit_ = now + 3000;
-            sendNextChange_ = now + 20;
-            preamble_ = false;
         }
+        writeTx(false);
+    }
 
-        if (sendIndex_ < 19) {
-            if (sendNextChange_ > 0) {
-                while (!timeReached(micros(), sendNextBit_)) {
-                    if (timeReached(micros(), sendNextChange_)) {
-                        toggleTx();
-                        sendNextChange_ += 20;
-                    }
-                }
-                sendNextChange_ = 0;
-                writeTx(false);
-                sendNextBit_ += sendBuffer_[sendIndex_] ? 6000 : 3000;
-            } else {
-                if (!timeReached(now, sendNextBit_)) {
-                    return;
-                }
-                sendNextBit_ = now + 3000;
-                sendNextChange_ = now + 20;
-                ++sendIndex_;
-            }
-        } else {
-            finishSending();
+    void sendFrameSimplebus2() {
+        sendCarrierSimplebus2(3000);
+        delayMicroseconds(16000);
+        for (uint8_t index = 0; index < 19; ++index) {
+            sendCarrierSimplebus2(3000);
+            delayMicroseconds(sendBuffer_[index] ? 6000 : 3000);
+            ESP.wdtFeed();
         }
     }
 
-    void sendingLoopSimplebus1() {
-        uint32_t now = micros();
-        if (preamble_) {
-            if (sendNextBit_ == 0 && sendNextChange_ == 0) {
-                writeTx(true);
-                sendNextBit_ = now + 3000;
-                while (!timeReached(micros(), sendNextBit_)) {
-                    yield();
-                }
-                sendNextBit_ = 0;
-                sendNextChange_ = now + 16000;
-                writeTx(false);
-                return;
-            }
-            if (!timeReached(now, sendNextChange_)) {
-                return;
-            }
-            sendNextBit_ = now + 3000;
-            sendNextChange_ = now + 3020;
-            preamble_ = false;
-        }
-
-        if (sendIndex_ < 19) {
-            if (sendNextChange_ > 0) {
-                writeTx(true);
-                while (!timeReached(micros(), sendNextBit_)) {
-                    yield();
-                }
-                sendNextChange_ = 0;
-                writeTx(false);
-                sendNextBit_ += sendBuffer_[sendIndex_] ? 6000 : 3000;
-            } else {
-                if (!timeReached(now, sendNextBit_)) {
-                    return;
-                }
-                sendNextBit_ = now + 3000;
-                sendNextChange_ = now + 3020;
-                ++sendIndex_;
-            }
-        } else {
-            finishSending();
+    void sendFrameSimplebus1() {
+        writeTx(true);
+        delayMicroseconds(3000);
+        writeTx(false);
+        delayMicroseconds(16000);
+        for (uint8_t index = 0; index < 19; ++index) {
+            writeTx(true);
+            delayMicroseconds(3000);
+            writeTx(false);
+            delayMicroseconds(sendBuffer_[index] ? 6000 : 3000);
+            ESP.wdtFeed();
         }
     }
 

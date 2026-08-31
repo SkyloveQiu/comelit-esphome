@@ -108,8 +108,9 @@ firewall allow-list where possible.
 
 The tested device uses an ESP-12F, a Comelit 6701W with S1 switches 1 and 5
 set to ON (address 17), Simplebus 2, and one main-door command. The firmware
-automatically retries the main-door frame and delays the HomeKit switch reset
-to improve reliability on a busy bus.
+sends each complete frame without yielding to HomeKit or the WebServer, then
+sends five additional attempts with a 250ms gap. The HomeKit switch reset is
+also delayed to improve reliability on a busy bus.
 
 ## Hardware notes
 
